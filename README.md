@@ -23,6 +23,8 @@ The test suite covers all level thresholds from 1 through 10,000; status cutoffs
 
 The initial Supabase migration creates the profile, task, XP-log, and daily-stat tables, RLS policies, an idempotent `complete_task` RPC, and a `pg_cron` reconciliation job. The calendar migration adds `tasks.scheduled_date` and its lookup index without changing the original schema migration. With the Supabase CLI linked and authenticated to the project, apply all pending migrations using `supabase db push`. XP awards are serialized by task and guarded by idempotency keys and database uniqueness constraints.
 
+If progress was saved under an earlier anonymous Supabase user ID, use the one-time recovery script at `supabase/scripts/restore-player-progress.sql`: enter the old and current UUIDs, then run it in the Supabase SQL Editor. It transfers task, XP-log, and daily-stat ownership without deleting rows, and aborts without changing data if it detects conflicts.
+
 ## Progress and calendar rules
 
 - Everyday, Challenge, and Planned rewards are 10, 30, and 50 XP.

@@ -7,6 +7,7 @@
 - Added an additive Supabase migration for nullable task `scheduled_date` values and a user/date index.
 - Added bounded retry with exponential backoff for transient Supabase fetch failures.
 - Added account linking and sign-in controls so the same player profile can sync across browsers.
+- Added a guarded, one-time SQL recovery script to transfer existing task and XP ownership between player IDs without deleting rows.
 
 ### Changed
 - Renamed the daily status “Loser” to “Looser” and moved the terminal path question to its own line.
