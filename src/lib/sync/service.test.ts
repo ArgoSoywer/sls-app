@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Task } from "@/types/game";
+import { fromRemoteTask } from "@/lib/supabase/client";
 import {
   getOutbox,
   loadLocalSnapshot,
@@ -31,6 +32,7 @@ vi.mock("@/lib/supabase/client", () => ({
     is_active: boolean;
     created_at: string;
     updated_at: string;
+    scheduled_date?: string | null;
   }) => ({
     id: row.id,
     userId: row.user_id,
@@ -42,6 +44,7 @@ vi.mock("@/lib/supabase/client", () => ({
     isActive: row.is_active,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    scheduledDate: row.scheduled_date ?? null,
   }),
 }));
 
@@ -72,6 +75,7 @@ const testTask: Task = {
   isActive: true,
   createdAt: "2026-10-20T00:00:00.000Z",
   updatedAt: "2026-10-20T00:00:00.000Z",
+  scheduledDate: null,
 };
 
 beforeEach(async () => {
@@ -122,6 +126,26 @@ describe("outbox synchronization", () => {
     });
   });
 
+  it("pushes a locally saved task immediately when online sync is requested", async () => {
+    const errors = await saveLocalTask(testTask, true, syncOutbox);
+    expect(errors).toEqual([]);
+    expect(supabaseHarness.client.from).toHaveBeenCalledWith("tasks");
+    expect(await getOutbox()).toEqual([]);
+  });
+
+  it("keeps fetch failures queued and returns a useful retry message", async () => {
+    await saveLocalTask(testTask, true);
+    supabaseHarness.client.from.mockImplementation(() => ({
+      upsert: vi.fn().mockResolvedValue({
+        error: { message: "TypeError: Failed to fetch" },
+      }),
+    }));
+    await expect(syncOutbox()).resolves.toEqual([
+      expect.stringContaining("Supabase could not be reached after retrying"),
+    ]);
+    expect(await getOutbox()).toMatchObject([{ state: "pending", task: testTask }]);
+  });
+
   describe("remote data hydration", () => {
     it("maps remote task rows and overlays unsynced local edits", async () => {
       const remoteTask = {
@@ -133,6 +157,7 @@ describe("outbox synchronization", () => {
         description: "Old remote description",
         xp_value: 30,
         is_active: true,
+        scheduled_date: "2026-10-30",
         created_at: testTask.createdAt,
         updated_at: testTask.updatedAt,
       };
@@ -149,6 +174,7 @@ describe("outbox synchronization", () => {
       await saveLocalTask(localEdit, true);
 
       expect(await loadRemoteTasks([testTask])).toEqual([localEdit]);
+      expect(fromRemoteTask(remoteTask).scheduledDate).toBe("2026-10-30");
       expect(supabaseHarness.client.from).toHaveBeenCalledWith("tasks");
       expect(builder.eq).toHaveBeenCalledWith("user_id", "player-123");
     });

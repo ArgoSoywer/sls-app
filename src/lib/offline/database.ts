@@ -2,7 +2,7 @@ import type { Completion, RemoteCompletionRow, SyncOperation, Task } from "@/typ
 import { xpForCategory } from "@/features/game-engine";
 
 const DATABASE_NAME = "sls-offline";
-const DATABASE_VERSION = 1;
+const DATABASE_VERSION = 2;
 const TASK_STORE = "tasks";
 const COMPLETION_STORE = "completions";
 const METADATA_STORE = "metadata";
@@ -154,7 +154,11 @@ export async function mergeRemoteCompletions(rows: RemoteCompletionRow[]): Promi
   database.close();
 }
 
-export async function saveLocalTask(task: Task, queueRemote: boolean): Promise<void> {
+export async function saveLocalTask(
+  task: Task,
+  queueRemote: boolean,
+  syncImmediately?: () => Promise<string[]>,
+): Promise<string[]> {
   const database = await openDatabase();
   const stores = queueRemote ? [TASK_STORE, OUTBOX_STORE] : [TASK_STORE];
   const transaction = database.transaction(stores, "readwrite");
@@ -171,6 +175,8 @@ export async function saveLocalTask(task: Task, queueRemote: boolean): Promise<v
   }
   await transactionDone(transaction);
   database.close();
+  if (queueRemote && syncImmediately) return syncImmediately();
+  return [];
 }
 
 export async function saveTimezone(timezone: string, queueRemote = false): Promise<void> {

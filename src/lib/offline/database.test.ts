@@ -68,6 +68,21 @@ describe("local IndexedDB profile", () => {
     ]);
   });
 
+  it("invokes immediate sync only after the task and outbox have committed", async () => {
+    const scheduled = task({ id: "scheduled-task", scheduledDate: "2026-10-28" });
+    let persistedBeforePush = false;
+    const errors = await saveLocalTask(scheduled, true, async () => {
+      const snapshot = await loadLocalSnapshot();
+      persistedBeforePush = snapshot.tasks.some((item) => item.id === scheduled.id)
+        && (await getOutbox()).some((operation) => operation.task?.id === scheduled.id);
+      return [];
+    });
+    expect(errors).toEqual([]);
+    expect(persistedBeforePush).toBe(true);
+    expect((await loadLocalSnapshot()).tasks.find((item) => item.id === scheduled.id)?.scheduledDate)
+      .toBe("2026-10-28");
+  });
+
   it("replaces the task cache without leaving stale tasks", async () => {
     await saveLocalTask(task(), false);
     const replacement = task({ id: "replacement", title: "Fresh task" });

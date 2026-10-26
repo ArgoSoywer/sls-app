@@ -2,6 +2,7 @@
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { PathKey, Task, TaskCategory } from "@/types/game";
+import { createRetryingFetch } from "@/lib/supabase/retrying-fetch";
 
 let supabaseClient: SupabaseClient | null | undefined;
 
@@ -18,6 +19,7 @@ export function getSupabaseClient(): SupabaseClient | null {
   }
   supabaseClient = createClient(url, anonKey, {
     auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
+    global: { fetch: createRetryingFetch(globalThis.fetch.bind(globalThis)) },
   });
   return supabaseClient;
 }
@@ -47,6 +49,7 @@ interface RemoteTask {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  scheduled_date?: string | null;
 }
 
 export function fromRemoteTask(row: RemoteTask): Task {
@@ -61,5 +64,6 @@ export function fromRemoteTask(row: RemoteTask): Task {
     isActive: row.is_active,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    scheduledDate: row.scheduled_date ?? null,
   };
 }

@@ -13,10 +13,25 @@ import {
   getSupabaseClient,
 } from "@/lib/supabase/client";
 
+function isNetworkFailure(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /failed to fetch|fetch failed|networkerror|network request failed|load failed/i.test(message);
+}
+
+function networkFailureMessage(): string {
+  return "Supabase could not be reached after retrying. Check your connection, Supabase project URL, and API availability. Changes remain queued for retry.";
+}
+
 export async function syncOutbox(): Promise<string[]> {
   const client = getSupabaseClient();
   if (!client) return [];
-  const userId = await ensureAnonymousSession();
+  let userId: string;
+  try {
+    userId = await ensureAnonymousSession();
+  } catch (error) {
+    if (isNetworkFailure(error)) return [networkFailureMessage()];
+    throw error;
+  }
   const operations = (await getOutbox()).filter((operation) => operation.state === "pending");
   const errors: string[] = [];
 
@@ -34,6 +49,7 @@ export async function syncOutbox(): Promise<string[]> {
           description: task.description,
           xp_value: task.xpValue,
           is_active: task.isActive,
+          scheduled_date: task.scheduledDate ?? null,
           updated_at: task.updatedAt,
         });
         if (error) throw new Error(error.message);
@@ -55,6 +71,11 @@ export async function syncOutbox(): Promise<string[]> {
       }
       await acknowledgeOperation(operation);
     } catch (error) {
+      if (isNetworkFailure(error)) {
+        await markOperationPending(operation);
+        errors.push(networkFailureMessage());
+        break;
+      }
       const message = error instanceof Error ? error.message : "Unknown synchronization failure.";
       await markOperationFailed(operation, message);
       errors.push(message);
@@ -70,7 +91,7 @@ export async function loadRemoteTasks(localTasks: Task[]): Promise<Task[] | null
 
   const { data, error } = await client
     .from("tasks")
-    .select("id,user_id,path,category,title,description,xp_value,is_active,created_at,updated_at")
+    .select("id,user_id,path,category,title,description,xp_value,is_active,scheduled_date,created_at,updated_at")
     .eq("user_id", userId)
     .order("created_at", { ascending: true });
   if (error) throw new Error(`Could not load tasks from Supabase: ${error.message}`);
@@ -88,6 +109,7 @@ export async function loadRemoteTasks(localTasks: Task[]): Promise<Task[] | null
         description: task.description,
         xp_value: task.xpValue,
         is_active: task.isActive,
+        scheduled_date: task.scheduledDate ?? null,
         created_at: task.createdAt,
         updated_at: task.updatedAt,
       });

@@ -9,7 +9,7 @@ export const PATHS = [
 export type PathKey = (typeof PATHS)[number];
 export type TaskCategory = "everyday" | "challenge" | "planned";
 export type StatusName =
-  | "Loser"
+  | "Looser"
   | "Average Guy"
   | "Hard-Working Guy"
   | "Baddest Guy"
@@ -26,6 +26,7 @@ export interface Task {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  scheduledDate?: string | null;
 }
 
 export interface Completion {

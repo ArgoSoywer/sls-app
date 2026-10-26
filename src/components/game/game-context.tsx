@@ -57,6 +57,7 @@ interface GameContextValue {
     category: TaskCategory;
     title: string;
     description: string;
+    scheduledDate?: string | null;
   }) => Promise<void>;
   completeTask: (taskId: string) => Promise<void>;
   archiveTask: (taskId: string) => Promise<void>;
@@ -197,6 +198,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     category: TaskCategory;
     title: string;
     description: string;
+    scheduledDate?: string | null;
   }) => {
     const timestamp = new Date().toISOString();
     const previous = input.id ? tasks.find((task) => task.id === input.id) : undefined;
@@ -212,12 +214,19 @@ export function GameProvider({ children }: { children: ReactNode }) {
       isActive: true,
       createdAt: previous?.createdAt ?? timestamp,
       updatedAt: timestamp,
+      scheduledDate: input.scheduledDate === undefined
+        ? previous?.scheduledDate ?? null
+        : input.scheduledDate,
     };
     if (!task.title) throw new Error("Task title cannot be empty.");
-    await saveLocalTask(task, syncAvailable);
+    const syncErrors = await saveLocalTask(
+      task,
+      syncAvailable,
+      syncAvailable && isOnline ? syncOutbox : undefined,
+    );
     setTasks((existing) => [task, ...existing.filter((item) => item.id !== task.id)]);
-    if (syncAvailable && isOnline) await synchronize();
-  }, [isOnline, synchronize, syncAvailable, tasks]);
+    if (syncErrors.length > 0) setError(`Sync needs attention: ${syncErrors.join(" · ")}`);
+  }, [isOnline, syncAvailable, tasks]);
 
   const completeTask = useCallback(async (taskId: string) => {
     const task = tasks.find((item) => item.id === taskId && item.isActive);
@@ -231,10 +240,14 @@ export function GameProvider({ children }: { children: ReactNode }) {
     const task = tasks.find((item) => item.id === taskId);
     if (!task) throw new Error("This task could not be found.");
     const archived = { ...task, isActive: false, updatedAt: new Date().toISOString() };
-    await saveLocalTask(archived, syncAvailable);
+    const syncErrors = await saveLocalTask(
+      archived,
+      syncAvailable,
+      syncAvailable && isOnline ? syncOutbox : undefined,
+    );
     setTasks((existing) => existing.map((item) => item.id === taskId ? archived : item));
-    if (syncAvailable && isOnline) await synchronize();
-  }, [isOnline, synchronize, syncAvailable, tasks]);
+    if (syncErrors.length > 0) setError(`Sync needs attention: ${syncErrors.join(" · ")}`);
+  }, [isOnline, syncAvailable, tasks]);
 
   const updateTimezone = useCallback(async (nextTimezone: string) => {
     try {
