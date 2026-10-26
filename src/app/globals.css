@@ -439,6 +439,31 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 }
 .primary-button:hover { border-color: var(--cyan); box-shadow: 0 0 24px rgba(93, 203, 244, .14); }
 .primary-button:disabled { opacity: .5; cursor: wait; }
+.settings-account {
+  display: grid;
+  gap: 10px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(134, 168, 195, .16);
+}
+.settings-account h3 { margin: -4px 0 0; color: #e3edf8; font-family: var(--serif); font-size: 19px; font-weight: 400; }
+.settings-account > .form-help { margin: -4px 0 0; }
+.settings-account form { margin-top: 2px; }
+.account-actions { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+.account-actions .primary-button { padding-inline: 12px; }
+.secondary-button {
+  min-height: 43px;
+  padding: 0 14px;
+  border: 1px solid rgba(150, 165, 206, .28);
+  background: rgba(7, 10, 17, .72);
+  color: #c0c5dc;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .16em;
+  cursor: pointer;
+}
+.secondary-button:hover { border-color: #b1a3f4; color: #e8e2ff; }
+.secondary-button:disabled { opacity: .45; cursor: not-allowed; }
 
 /* Path dungeons */
 .dungeon-screen {

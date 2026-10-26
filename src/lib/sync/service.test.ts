@@ -146,6 +146,15 @@ describe("outbox synchronization", () => {
     expect(await getOutbox()).toMatchObject([{ state: "pending", task: testTask }]);
   });
 
+  it("surfaces authentication session failures without hiding queued tasks", async () => {
+    await saveLocalTask(testTask, true);
+    supabaseHarness.ensureSession.mockRejectedValueOnce(new Error("Anonymous sign-in is disabled"));
+    await expect(syncOutbox()).resolves.toEqual([
+      "Could not establish the Supabase player session: Anonymous sign-in is disabled",
+    ]);
+    expect(await getOutbox()).toMatchObject([{ state: "pending", task: testTask }]);
+  });
+
   describe("remote data hydration", () => {
     it("maps remote task rows and overlays unsynced local edits", async () => {
       const remoteTask = {

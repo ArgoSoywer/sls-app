@@ -23,14 +23,21 @@ function networkFailureMessage(): string {
 }
 
 export async function syncOutbox(): Promise<string[]> {
-  const client = getSupabaseClient();
+  let client: ReturnType<typeof getSupabaseClient>;
+  try {
+    client = getSupabaseClient();
+  } catch (error) {
+    return [error instanceof Error ? error.message : "Could not initialize the Supabase client."];
+  }
   if (!client) return [];
   let userId: string;
   try {
     userId = await ensureAnonymousSession();
   } catch (error) {
     if (isNetworkFailure(error)) return [networkFailureMessage()];
-    throw error;
+    return [error instanceof Error
+      ? `Could not establish the Supabase player session: ${error.message}`
+      : "Could not establish the Supabase player session."];
   }
   const operations = (await getOutbox()).filter((operation) => operation.state === "pending");
   const errors: string[] = [];

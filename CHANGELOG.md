@@ -6,6 +6,7 @@
 - Added a month calendar view with date selection, scheduled-task indicators, task details, and date-prefilled task creation/editing.
 - Added an additive Supabase migration for nullable task `scheduled_date` values and a user/date index.
 - Added bounded retry with exponential backoff for transient Supabase fetch failures.
+- Added account linking and sign-in controls so the same player profile can sync across browsers.
 
 ### Changed
 - Renamed the daily status “Loser” to “Looser” and moved the terminal path question to its own line.

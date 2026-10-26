@@ -9,7 +9,7 @@ npm install
 npm run dev
 ```
 
-Without Supabase environment variables, the app runs as a local profile using IndexedDB. Tasks and XP persist in this browser. To enable server persistence and cross-session sync, copy `.env.example` to `.env.local`, provide a Supabase project URL and anon key, apply the migration in `supabase/migrations/202610200001_initial_schema.sql`, and enable anonymous sign-in in Supabase Auth. Never put a service-role key in a browser environment variable.
+Without Supabase environment variables, the app runs as a local profile using IndexedDB. Tasks and XP persist in this browser. To enable server persistence, copy `.env.example` to `.env.local`, provide a Supabase project URL and anon key, apply the migrations, and enable anonymous sign-in and email/password authentication in Supabase Auth. For cross-browser sync, link the local profile to an email account in System Settings, then sign in with that account on other browsers. Never put a service-role key in a browser environment variable.
 
 ```powershell
 npm run typecheck
