@@ -17,16 +17,19 @@ export function TaskComposer({
   onClose,
   task,
   category,
+  scheduledDate,
 }: {
   path: PathKey;
   open: boolean;
   onClose: () => void;
   task?: Task;
   category?: TaskCategory;
+  scheduledDate?: string;
 }) {
   const { saveTask } = useGame();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [date, setDate] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<TaskCategory>(category ?? "everyday");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -34,9 +37,10 @@ export function TaskComposer({
   useEffect(() => {
     setTitle(task?.title ?? "");
     setDescription(task?.description ?? "");
+    setDate(task?.scheduledDate ?? scheduledDate ?? "");
     setSelectedCategory(task?.category ?? category ?? "everyday");
     setError("");
-  }, [category, task, open]);
+  }, [category, scheduledDate, task, open]);
 
   useEffect(() => {
     if (!open) return;
@@ -54,7 +58,14 @@ export function TaskComposer({
     setSaving(true);
     setError("");
     try {
-      await saveTask({ id: task?.id, path, category: selectedCategory, title, description });
+      await saveTask({
+        id: task?.id,
+        path,
+        category: selectedCategory,
+        title,
+        description,
+        scheduledDate: date || null,
+      });
       onClose();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not save this task.");
@@ -118,6 +129,13 @@ export function TaskComposer({
                 <option key={item.value} value={item.value}>{item.label} · {item.xp} XP</option>
               ))}
             </select>
+            <label htmlFor="task-scheduled-date">Scheduled date <span>OPTIONAL</span></label>
+            <input
+              id="task-scheduled-date"
+              type="date"
+              value={date}
+              onChange={(event) => setDate(event.target.value)}
+            />
             {task && <p className="form-help">Task category and reward stay fixed after creation.</p>}
             {error && <p className="form-error" role="alert">{error}</p>}
             <button className="primary-button" type="submit" disabled={saving}>

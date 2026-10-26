@@ -43,6 +43,7 @@ describe("TaskComposer", () => {
       category: "challenge",
       title: "Complete a long hike",
       description: "Take water.",
+      scheduledDate: null,
     }));
     expect(onClose).toHaveBeenCalledOnce();
   });
@@ -63,6 +64,7 @@ describe("TaskComposer", () => {
       category: "planned",
       title: "Read the revised text",
       description: "Take notes.",
+      scheduledDate: null,
     }));
     expect(onClose).toHaveBeenCalledOnce();
   });

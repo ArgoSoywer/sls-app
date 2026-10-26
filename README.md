@@ -21,7 +21,7 @@ npm run build
 
 The test suite covers all level thresholds from 1 through 10,000; status cutoffs and bars across all three period scales; timezone-aware day, Tuesday-week, and calendar-month boundaries; local IndexedDB task/completion rules; retry-safe Supabase outbox behavior; provider period calculations; and terminal, HUD, task-editor, and dungeon interactions. The coverage command enforces minimum coverage for the game engine, local persistence, and synchronization core.
 
-The Supabase migration creates the profile, task, XP-log, and daily-stat tables, RLS policies, an idempotent `complete_task` RPC, and a `pg_cron` reconciliation job. XP awards are serialized by task and guarded by idempotency keys and database uniqueness constraints.
+The initial Supabase migration creates the profile, task, XP-log, and daily-stat tables, RLS policies, an idempotent `complete_task` RPC, and a `pg_cron` reconciliation job. The calendar migration adds `tasks.scheduled_date` and its lookup index without changing the original schema migration. With the Supabase CLI linked and authenticated to the project, apply all pending migrations using `supabase db push`. XP awards are serialized by task and guarded by idempotency keys and database uniqueness constraints.
 
 ## Progress and calendar rules
 
@@ -31,5 +31,6 @@ The Supabase migration creates the profile, task, XP-log, and daily-stat tables,
 - Weeks start Tuesday at 00:00 in the saved IANA timezone. Each bar queries only its current day, week, or month and resets on that period boundary; lifetime XP and historical logs are retained.
 - The monthly bar alone supplies the master status. Above the last named threshold, the Monster bar stays full and shows overflow.
 - Offline completions are written to IndexedDB immediately and queued with stable idempotency keys. The same local calendar date is submitted when they later synchronize; future-dated completions are rejected by the RPC.
+- Scheduled tasks keep an optional calendar date; the Calendar page displays, creates, and edits tasks for the selected local calendar date.
 
 The 3D portrait is assembled from local Three.js primitives, so it requires no external model download. The service worker caches the application shell and same-origin navigations for offline return visits.
