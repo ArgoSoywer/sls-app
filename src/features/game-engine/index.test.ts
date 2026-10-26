@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   dateKeyInTimezone,
+  addCalendarMonths,
+  calendarMonthDays,
   daysInMonth,
   levelForXp,
   levelThreshold,
@@ -50,10 +52,10 @@ describe("level curve", () => {
 
 describe("status bars", () => {
   it.each([
-    [0, "Loser"],
-    [1, "Loser"],
-    [299, "Loser"],
-    [300, "Loser"],
+    [0, "Looser"],
+    [1, "Looser"],
+    [299, "Looser"],
+    [300, "Looser"],
     [301, "Average Guy"],
     [499, "Average Guy"],
     [500, "Average Guy"],
@@ -69,7 +71,7 @@ describe("status bars", () => {
   });
 
   it.each([
-    [2_100, "Loser"],
+    [2_100, "Looser"],
     [2_101, "Average Guy"],
     [3_500, "Average Guy"],
     [3_501, "Hard-Working Guy"],
@@ -82,7 +84,7 @@ describe("status bars", () => {
   });
 
   it.each([
-    [8_400, "Loser"],
+    [8_400, "Looser"],
     [8_401, "Average Guy"],
     [14_000, "Average Guy"],
     [14_001, "Hard-Working Guy"],
@@ -95,7 +97,7 @@ describe("status bars", () => {
   });
 
   it("fills the current named band and exposes monster overflow", () => {
-    expect(periodBar(0)).toMatchObject({ status: "Loser", lowerBound: 0, upperBound: 300, progress: 0 });
+    expect(periodBar(0)).toMatchObject({ status: "Looser", lowerBound: 0, upperBound: 300, progress: 0 });
     expect(periodBar(300)).toMatchObject({ lowerBound: 0, upperBound: 300, progress: 100 });
     expect(periodBar(501).progress).toBeCloseTo(0.4);
     expect(periodBar(750)).toMatchObject({ status: "Hard-Working Guy", lowerBound: 500, upperBound: 750, progress: 100 });
@@ -162,6 +164,23 @@ describe("calendar periods", () => {
     expect(daysInMonth("2026-07-10")).toBe(31);
     expect(() => periodRange("2026-02-29", "day")).toThrow(RangeError);
     expect(() => daysInMonth("2026-13-01")).toThrow(RangeError);
+  });
+
+  it("builds Monday-first calendar grids and navigates month/year boundaries", () => {
+    const october = calendarMonthDays("2026-10-20");
+    expect(october).toHaveLength(35);
+    expect(october[0]).toBe("2026-09-28");
+    expect(october[1]).toBe("2026-09-29");
+    expect(october[3]).toBe("2026-10-01");
+    expect(october.at(-1)).toBe("2026-11-01");
+
+    const august = calendarMonthDays("2026-08-12");
+    expect(august).toHaveLength(42);
+    expect(august[0]).toBe("2026-07-27");
+    expect(august.at(-1)).toBe("2026-09-06");
+    expect(addCalendarMonths("2026-12-31", 1)).toBe("2027-01-01");
+    expect(addCalendarMonths("2026-01-01", -1)).toBe("2025-12-01");
+    expect(() => addCalendarMonths("2026-01-01", 1.5)).toThrow(RangeError);
   });
 
   it.each([

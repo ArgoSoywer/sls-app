@@ -50,6 +50,10 @@ export default function DashboardPage() {
 
       <SystemTerminal />
 
+      <div className="calendar-entry">
+        <Link href="/calendar"><span aria-hidden="true">▦</span> OPEN CALENDAR <span aria-hidden="true">↗</span></Link>
+      </div>
+
       <nav className="path-navigation" aria-label="Your paths">
         {PATHS.map((path, index) => (
           <Link href={`/paths/${path}`} className="path-link" key={path}>

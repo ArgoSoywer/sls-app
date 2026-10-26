@@ -4,7 +4,7 @@ import type { PeriodBar } from "@/types/game";
 
 const gameHarness = vi.hoisted(() => ({
   game: {
-    dailyBar: { status: "Loser", xp: 300, upperBound: 300, progress: 100, overflow: 0 } as PeriodBar,
+    dailyBar: { status: "Looser", xp: 300, upperBound: 300, progress: 100, overflow: 0 } as PeriodBar,
     weeklyBar: { status: "Average Guy", xp: 3_500, upperBound: 3_500, progress: 100, overflow: 0 } as PeriodBar,
     monthlyBar: { status: "Baddest Guy", xp: 20_000, upperBound: 31_000, progress: 75, overflow: 0 } as PeriodBar,
     now: new Date("2026-10-20T12:00:00.000Z"),

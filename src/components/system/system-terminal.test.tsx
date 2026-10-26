@@ -24,9 +24,11 @@ import { SystemTerminal } from "./system-terminal";
 describe("SystemTerminal", () => {
   it("speaks the exact configured monthly-status welcome line and presents the five paths", () => {
     render(<SystemTerminal />);
-    expect(screen.getByText(
-      "Welcome back to the SLS, Hard-Working Guy. Your current level: 27. Which path are going to choose?",
-    )).toBeInTheDocument();
+    const message = "Welcome back to the SLS, Hard-Working Guy. Your current level: 27.\nWhich path are going to choose?";
+    const typedLine = screen.getByText((_content, element) =>
+      element?.tagName === "SPAN" && element.textContent === message,
+    );
+    expect(typedLine.textContent).toBe(message);
     expect(screen.getByRole("link", { name: /Profession/ })).toHaveAttribute("href", "/paths/profession");
     expect(screen.getByRole("link", { name: /Academics/ })).toHaveAttribute("href", "/paths/academics");
     expect(screen.getByRole("link", { name: /Survival/ })).toHaveAttribute("href", "/paths/survival");

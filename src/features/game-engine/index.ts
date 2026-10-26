@@ -10,7 +10,7 @@ export const XP_BY_CATEGORY: Record<TaskCategory, number> = {
 
 const DAILY_THRESHOLDS = [300, 500, 750, 1_000] as const;
 const STATUS_NAMES: readonly StatusName[] = [
-  "Loser",
+  "Looser",
   "Average Guy",
   "Hard-Working Guy",
   "Baddest Guy",
@@ -167,6 +167,30 @@ export function xpInPeriod(
 export function daysInMonth(dateKey: string): number {
   const [year, month] = parseDateKey(dateKey);
   return new Date(Date.UTC(year, month, 0)).getUTCDate();
+}
+
+export function calendarMonthDays(dateKey: string): string[] {
+  const [year, month] = parseDateKey(dateKey);
+  const firstDay = new Date(Date.UTC(year, month - 1, 1)).getUTCDay();
+  const mondayOffset = (firstDay + 6) % 7;
+  const days = daysInMonth(dateKey);
+  const cellCount = Math.ceil((mondayOffset + days) / 7) * 7;
+  const firstCell = new Date(Date.UTC(year, month - 1, 1 - mondayOffset));
+  return Array.from({ length: cellCount }, (_, index) => {
+    const date = new Date(Date.UTC(
+      firstCell.getUTCFullYear(),
+      firstCell.getUTCMonth(),
+      firstCell.getUTCDate() + index,
+    ));
+    return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}`;
+  });
+}
+
+export function addCalendarMonths(dateKey: string, offset: number): string {
+  const [year, month] = parseDateKey(dateKey);
+  if (!Number.isInteger(offset)) throw new RangeError("Month offset must be an integer.");
+  const nextMonth = new Date(Date.UTC(year, month - 1 + offset, 1));
+  return `${nextMonth.getUTCFullYear()}-${String(nextMonth.getUTCMonth() + 1).padStart(2, "0")}-01`;
 }
 
 export function displayDate(date: Date, timeZone: string): string {

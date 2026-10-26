@@ -17,7 +17,7 @@ const pathNames: Record<PathKey, string> = {
 export function SystemTerminal() {
   const { monthlyBar, level } = useGame();
   const reducedMotion = useReducedMotion();
-  const message = `Welcome back to the SLS, ${monthlyBar.status}. Your current level: ${level}. Which path are going to choose?`;
+  const message = `Welcome back to the SLS, ${monthlyBar.status}. Your current level: ${level}.\nWhich path are going to choose?`;
   const [shown, setShown] = useState("");
 
   useEffect(() => {
