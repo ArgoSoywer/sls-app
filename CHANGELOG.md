@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased] — 2026-10-26
+## [Unreleased] — 2026-10-28
 
 ### Added
 - Added a month calendar view with date selection, scheduled-task indicators, task details, and date-prefilled task creation/editing.

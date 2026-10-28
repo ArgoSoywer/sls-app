@@ -29,7 +29,6 @@ async function hydrateRemoteProfile(
   snapshot: LocalSnapshot,
   isActive: () => boolean,
   refreshLocal: () => Promise<void>,
-  setTasks: Dispatch<SetStateAction<Task[]>>,
   setCompletions: Dispatch<SetStateAction<Completion[]>>,
   setError: Dispatch<SetStateAction<string | null>>,
 ): Promise<void> {
@@ -38,7 +37,6 @@ async function hydrateRemoteProfile(
   const remoteTasks = await loadRemoteTasks(snapshot.tasks);
   if (isActive() && remoteTasks) {
     await replaceLocalTasks(remoteTasks);
-    setTasks(remoteTasks);
   }
 
   const remoteCompletions = await loadRemoteCompletions();
@@ -86,7 +84,6 @@ export function useGameInitialization({
           snapshot,
           () => active,
           refreshLocal,
-          setTasks,
           setCompletions,
           setError,
         );

@@ -43,3 +43,10 @@ No confirmed unused exports or unused imports were found under `src/`. The `@tes
 
 - The repeated CSS selectors around `src/app/globals.css:848-942` are responsive media-query overrides for existing base styles; they are intentional and should not be collapsed in a way that changes layout behavior.
 - No application behavior or Supabase schema change is proposed by this review. Refactors should preserve existing tests and the minimum 94% statement-coverage requirement.
+
+## Refactor follow-up
+
+- Addressed findings 1-10, 13-19, and 21 through the cleanup commits on `refactor/code-cleanup`; dashboard and dungeon sync notices are now shared.
+- Finding 12 was partially addressed by centralizing path labels; typewriter timing and path-link rendering remain in `SystemTerminal` because they are a single, narrowly scoped interaction.
+- Finding 11 was partially addressed by extracting the shared sync notice; the dashboard completion banner remains local because it has no second consumer.
+- Finding 20 is intentionally deferred. Removing IndexedDB indexes requires a versioned local-database upgrade, and this pass avoids changing persisted storage schema when no indexed query currently exists.
