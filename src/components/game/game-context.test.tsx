@@ -9,15 +9,7 @@ import {
   saveTimezone,
 } from "@/lib/offline/database";
 import type { Task } from "@/types/game";
-
-async function clearDatabase(): Promise<void> {
-  await new Promise<void>((resolve, reject) => {
-    const request = indexedDB.deleteDatabase("sls-offline");
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-    request.onblocked = () => reject(new Error("Test database deletion was blocked."));
-  });
-}
+import { clearOfflineDatabase } from "@/test-utils/indexeddb";
 
 const tasks: Task[] = [
   {
@@ -89,7 +81,7 @@ function Probe() {
 
 beforeEach(async () => {
   vi.useFakeTimers({ toFake: ["Date"] });
-  await clearDatabase();
+  await clearOfflineDatabase();
   vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "");
   vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "");
 });

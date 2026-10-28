@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Task } from "@/types/game";
+import { clearOfflineDatabase } from "@/test-utils/indexeddb";
 import {
   acknowledgeOperation,
   getOutbox,
@@ -12,15 +13,6 @@ import {
   saveLocalTask,
   saveTimezone,
 } from "./database";
-
-async function clearDatabase(): Promise<void> {
-  await new Promise<void>((resolve, reject) => {
-    const request = indexedDB.deleteDatabase("sls-offline");
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-    request.onblocked = () => reject(new Error("Test database deletion was blocked."));
-  });
-}
 
 function task(overrides: Partial<Task> = {}): Task {
   return {
@@ -37,7 +29,7 @@ function task(overrides: Partial<Task> = {}): Task {
   };
 }
 
-beforeEach(clearDatabase);
+beforeEach(clearOfflineDatabase);
 
 describe("local IndexedDB profile", () => {
   it("initializes a timezone and starter tasks once, then reloads persisted values", async () => {

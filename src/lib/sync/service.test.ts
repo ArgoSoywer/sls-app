@@ -8,6 +8,7 @@ import {
   saveLocalTask,
   saveTimezone,
 } from "@/lib/offline/database";
+import { clearOfflineDatabase } from "@/test-utils/indexeddb";
 
 const supabaseHarness = vi.hoisted(() => ({
   client: {
@@ -56,15 +57,6 @@ import {
   syncOutbox,
 } from "./service";
 
-async function clearDatabase(): Promise<void> {
-  await new Promise<void>((resolve, reject) => {
-    const request = indexedDB.deleteDatabase("sls-offline");
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-    request.onblocked = () => reject(new Error("Test database deletion was blocked."));
-  });
-}
-
 const testTask: Task = {
   id: "task-sync",
   path: "academics",
@@ -79,7 +71,7 @@ const testTask: Task = {
 };
 
 beforeEach(async () => {
-  await clearDatabase();
+  await clearOfflineDatabase();
   supabaseHarness.getClient.mockReturnValue(supabaseHarness.client);
   supabaseHarness.ensureSession.mockResolvedValue("player-123");
   supabaseHarness.client.rpc.mockResolvedValue({ data: { duplicate: false }, error: null });

@@ -29,3 +29,4 @@
 - Separated Supabase account operations and the cross-browser account form from timezone settings.
 - Isolated local/remote profile initialization and task/timezone actions from the game context provider.
 - Separated task-editor form controls from modal state and save behavior.
+- Reused one IndexedDB reset helper across persistence, synchronization, and provider tests.
