@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 import { useGame } from "@/components/game/game-context";
 import { SystemHud } from "@/components/system/system-hud";
 import { SettingsPanel } from "@/components/system/settings-panel";
@@ -10,6 +9,7 @@ import { SyncNotice } from "@/components/system/sync-notice";
 import { TaskComposer } from "@/components/tasks/task-composer";
 import { CATEGORY_INFO, PATH_INFO, TASK_CATEGORY_ORDER, xpForCategory } from "@/features/game-engine";
 import type { PathKey, Task, TaskCategory } from "@/types/game";
+import { DungeonTaskCategory } from "@/components/dungeons/dungeon-task-category";
 
 const categories = TASK_CATEGORY_ORDER.map((value) => ({
   value,
@@ -79,69 +79,16 @@ export function DungeonPage({ path }: { path: PathKey }) {
             task.category === category.value && !completed.has(task.id),
           );
           return (
-            <motion.section
-              className={`task-category category-${category.value}`}
+            <DungeonTaskCategory
               key={category.value}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.07, duration: 0.35 }}
-              aria-labelledby={`category-${category.value}`}
-            >
-              <div className="category-heading">
-                <div>
-                  <span className="category-index">0{index + 1} / OBJECTIVES</span>
-                  <h2 id={`category-${category.value}`}>{category.label}</h2>
-                  <p>{category.subtitle} · {category.xp} XP</p>
-                </div>
-                <button
-                  className="add-task-button"
-                  onClick={() => setComposer({ open: true, category: category.value })}
-                  aria-label={`Add ${category.label.toLowerCase()} task`}
-                >
-                  <span>+</span> ADD
-                </button>
-              </div>
-              <div className="task-list">
-                <AnimatePresence initial={false}>
-                  {list.map((task) => {
-                    return (
-                      <motion.article
-                        key={task.id}
-                        className="task-card"
-                        layout
-                        initial={{ opacity: 0, y: 12 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, filter: "blur(12px) brightness(2.8)", x: 26, scale: 0.96 }}
-                        transition={{ duration: 0.28 }}
-                      >
-                        <button
-                          className="task-check"
-                          aria-label={`Complete ${task.title}`}
-                          onClick={() => void complete(task)}
-                        >
-                        </button>
-                        <div className="task-copy">
-                          <h3>{task.title}</h3>
-                          {task.description && <p>{task.description}</p>}
-                        </div>
-                        <span className="task-xp">+{task.xpValue}<small> XP</small></span>
-                        <div className="task-actions">
-                          <button onClick={() => setComposer({ open: true, task })} aria-label={`Edit ${task.title}`}>EDIT</button>
-                          <button onClick={() => void archive(task)} aria-label={`Archive ${task.title}`}>ARCHIVE</button>
-                        </div>
-                      </motion.article>
-                    );
-                  })}
-                </AnimatePresence>
-                {list.length === 0 && (
-                  <div className="empty-category">
-                    <span aria-hidden="true">◇</span>
-                    <p>No directives in this category.</p>
-                    <button onClick={() => setComposer({ open: true, category: category.value })}>Create the first</button>
-                  </div>
-                )}
-              </div>
-            </motion.section>
+              category={category}
+              index={index}
+              tasks={list}
+              onAdd={() => setComposer({ open: true, category: category.value })}
+              onComplete={(task) => void complete(task)}
+              onEdit={(task) => setComposer({ open: true, task })}
+              onArchive={(task) => void archive(task)}
+            />
           );
         })}
       </section>

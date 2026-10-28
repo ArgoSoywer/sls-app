@@ -25,3 +25,4 @@
 - Reused one sync-notice component across the dashboard and dungeon views.
 - Shared queued task payload mapping and outbox operation dispatch, separated remote task seeding/merging, and unified IndexedDB completion and sync-state helpers.
 - Split calendar month-grid and selected-day rendering from calendar state/navigation.
+- Extracted dungeon task-category and task-card rendering from path-level state/actions.
