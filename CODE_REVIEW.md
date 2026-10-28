@@ -37,7 +37,7 @@ No confirmed unused exports or unused imports were found under `src/`. The `@tes
 | 18 | `src/app/paths/[path]/page.tsx:5-10` | Low | Route validation uses a type assertion in `PATHS.includes(path as PathKey)` and repeats the assertion when passing the validated value. | Add a small `isPathKey` type guard and narrow the route parameter without assertions. |
 | 19 | `src/lib/offline/database.test.ts:10-18`; `src/lib/sync/service.test.ts:56-64`; `src/components/game/game-context.test.tsx:12-20` | Low | The same IndexedDB deletion/setup helper is copied in three test files. | Move the helper to a shared test utility and import it from the affected suites. |
 | 20 | `src/lib/offline/database.ts:19-31` | Low | The `taskId`, `localDate`, and outbox `createdAt` IndexedDB indexes are created, but no production query reads through those indexes. | Remove unused indexes in a versioned IndexedDB upgrade, or retain them only alongside an indexed query that demonstrates their purpose. |
-| 21 | `package.json:29` | Low | `@testing-library/user-event` is declared but not used by any test or application file. | Remove the unused development dependency and update the lockfile. |
+| 21 | `package.json:35` | Low | `@testing-library/user-event` is declared but not used by any test or application file. | Remove the unused development dependency and update the lockfile. |
 
 ## Notes
 
