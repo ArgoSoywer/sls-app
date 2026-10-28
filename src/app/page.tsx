@@ -6,6 +6,7 @@ import { useState } from "react";
 import { SystemHud } from "@/components/system/system-hud";
 import { SystemTerminal } from "@/components/system/system-terminal";
 import { SettingsPanel } from "@/components/system/settings-panel";
+import { SyncNotice } from "@/components/system/sync-notice";
 import { useGame } from "@/components/game/game-context";
 import { PATH_INFO } from "@/features/game-engine";
 import { PATHS } from "@/types/game";
@@ -62,17 +63,7 @@ export default function DashboardPage() {
         <span>{game.isReady ? "LOCAL PROFILE READY" : "INITIALIZING SYSTEM"}</span>
       </div>
 
-      {game.error && (
-        <div className="sync-notice" role="status">
-          <span>{game.error}</span>
-          {game.syncAvailable && game.isOnline && (
-            <button onClick={() => void game.retrySync()} disabled={game.isSyncing}>
-              {game.isSyncing ? "SYNCING…" : "RETRY"}
-            </button>
-          )}
-          <button className="notice-close" aria-label="Dismiss notification" onClick={game.clearError}>×</button>
-        </div>
-      )}
+      <SyncNotice />
       <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </main>
   );

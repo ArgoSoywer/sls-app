@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useGame } from "@/components/game/game-context";
 import { SystemHud } from "@/components/system/system-hud";
 import { SettingsPanel } from "@/components/system/settings-panel";
+import { SyncNotice } from "@/components/system/sync-notice";
 import { TaskComposer } from "@/components/tasks/task-composer";
 import { CATEGORY_INFO, PATH_INFO, TASK_CATEGORY_ORDER, xpForCategory } from "@/features/game-engine";
 import type { PathKey, Task, TaskCategory } from "@/types/game";
@@ -151,18 +152,6 @@ export function DungeonPage({ path }: { path: PathKey }) {
           <button onClick={() => setActionError("")} aria-label="Dismiss error">×</button>
         </div>
       )}
-      {game.error && (
-        <div className="sync-notice" role="status">
-          <span>{game.error}</span>
-          {game.syncAvailable && game.isOnline && (
-            <button onClick={() => void game.retrySync()} disabled={game.isSyncing}>
-              {game.isSyncing ? "SYNCING…" : "RETRY"}
-            </button>
-          )}
-          <button className="notice-close" aria-label="Dismiss notification" onClick={game.clearError}>×</button>
-        </div>
-      )}
-
       <footer className="dungeon-footer">
         <span>PROGRESS IS PERSONAL</span>
         <span>{game.lifetimeXp.toLocaleString()} LIFETIME XP · LEVEL {game.level.toLocaleString()}</span>
@@ -175,6 +164,7 @@ export function DungeonPage({ path }: { path: PathKey }) {
         onClose={() => setComposer({ open: false })}
       />
       <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <SyncNotice />
     </main>
   );
 }
