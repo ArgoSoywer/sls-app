@@ -23,3 +23,4 @@
 - Centralized path and task-category metadata, reused the game engine's task XP and month-length helpers, and narrowed path routes with a type guard.
 - Removed the unused `@testing-library/user-event` development dependency.
 - Reused one sync-notice component across the dashboard and dungeon views.
+- Shared queued task payload mapping and outbox operation dispatch, separated remote task seeding/merging, and unified IndexedDB completion and sync-state helpers.

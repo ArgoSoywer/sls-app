@@ -210,11 +210,7 @@ export async function recordLocalCompletion(
   const transaction = database.transaction(stores, "readwrite");
   const completionStore = transaction.objectStore(COMPLETION_STORE);
   const existing = await requestValue(completionStore.getAll()) as Completion[];
-  const alreadyDone = existing.some((completion) =>
-    completion.taskId === task.id
-      && (task.category !== "everyday" || completion.localDate === localDate),
-  );
-  if (alreadyDone) {
+  if (hasAlreadyCompleted(task, localDate, existing)) {
     transaction.abort();
     database.close();
     throw new Error(task.category === "everyday"
@@ -222,8 +218,28 @@ export async function recordLocalCompletion(
       : "This task has already been completed.");
   }
 
+  const completion = createCompletion(task, localDate, remoteEnabled);
+  completionStore.add(completion);
+  if (remoteEnabled) transaction.objectStore(OUTBOX_STORE).put(createCompletionOperation(completion));
+  await transactionDone(transaction);
+  database.close();
+  return completion;
+}
+
+function hasAlreadyCompleted(
+  task: Task,
+  localDate: string,
+  completions: Completion[],
+): boolean {
+  return completions.some((completion) =>
+    completion.taskId === task.id
+      && (task.category !== "everyday" || completion.localDate === localDate),
+  );
+}
+
+function createCompletion(task: Task, localDate: string, remoteEnabled: boolean): Completion {
   const idempotencyKey = makeId();
-  const completion: Completion = {
+  return {
     id: idempotencyKey,
     taskId: task.id,
     category: task.category,
@@ -233,20 +249,16 @@ export async function recordLocalCompletion(
     createdAt: new Date().toISOString(),
     syncState: remoteEnabled ? "pending" : "local",
   };
-  completionStore.add(completion);
-  if (remoteEnabled) {
-    const operation: SyncOperation = {
-      id: idempotencyKey,
-      kind: "completion",
-      createdAt: completion.createdAt,
-      state: "pending",
-      completion,
-    };
-    transaction.objectStore(OUTBOX_STORE).put(operation);
-  }
-  await transactionDone(transaction);
-  database.close();
-  return completion;
+}
+
+function createCompletionOperation(completion: Completion): SyncOperation {
+  return {
+    id: completion.idempotencyKey,
+    kind: "completion",
+    createdAt: completion.createdAt,
+    state: "pending",
+    completion,
+  };
 }
 
 export async function getOutbox(): Promise<SyncOperation[]> {
@@ -257,29 +269,21 @@ export async function getOutbox(): Promise<SyncOperation[]> {
 }
 
 export async function markOperationFailed(operation: SyncOperation, message: string): Promise<void> {
-  const database = await openDatabase();
-  const transaction = database.transaction([OUTBOX_STORE, COMPLETION_STORE], "readwrite");
-  transaction.objectStore(OUTBOX_STORE).put({ ...operation, state: "failed", error: message });
-  if (operation.completion) {
-    const completion = await requestValue<Completion | undefined>(
-      transaction.objectStore(COMPLETION_STORE).get(operation.completion.id),
-    );
-    if (completion) {
-      transaction.objectStore(COMPLETION_STORE).put({
-        ...completion,
-        syncState: "failed",
-        syncError: message,
-      });
-    }
-  }
-  await transactionDone(transaction);
-  database.close();
+  return updateOperationState(operation, "failed", message);
 }
 
 export async function markOperationPending(operation: SyncOperation): Promise<void> {
+  return updateOperationState(operation, "pending");
+}
+
+async function updateOperationState(
+  operation: SyncOperation,
+  state: "pending" | "failed",
+  error?: string,
+): Promise<void> {
   const database = await openDatabase();
   const transaction = database.transaction([OUTBOX_STORE, COMPLETION_STORE], "readwrite");
-  transaction.objectStore(OUTBOX_STORE).put({ ...operation, state: "pending", error: undefined });
+  transaction.objectStore(OUTBOX_STORE).put({ ...operation, state, error });
   if (operation.completion) {
     const completion = await requestValue<Completion | undefined>(
       transaction.objectStore(COMPLETION_STORE).get(operation.completion.id),
@@ -287,8 +291,8 @@ export async function markOperationPending(operation: SyncOperation): Promise<vo
     if (completion) {
       transaction.objectStore(COMPLETION_STORE).put({
         ...completion,
-        syncState: "pending",
-        syncError: undefined,
+        syncState: state,
+        syncError: error,
       });
     }
   }

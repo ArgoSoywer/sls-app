@@ -13,6 +13,8 @@ import {
   getSupabaseClient,
 } from "@/lib/supabase/client";
 
+type ActiveClient = NonNullable<ReturnType<typeof getSupabaseClient>>;
+
 function isNetworkFailure(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error);
   return /failed to fetch|fetch failed|networkerror|network request failed|load failed/i.test(message);
@@ -22,60 +24,61 @@ function networkFailureMessage(): string {
   return "Supabase could not be reached after retrying. Check your connection, Supabase project URL, and API availability. Changes remain queued for retry.";
 }
 
-export async function syncOutbox(): Promise<string[]> {
-  let client: ReturnType<typeof getSupabaseClient>;
-  try {
-    client = getSupabaseClient();
-  } catch (error) {
-    return [error instanceof Error ? error.message : "Could not initialize the Supabase client."];
-  }
-  if (!client) return [];
-  let userId: string;
-  try {
-    userId = await ensureAnonymousSession();
-  } catch (error) {
-    if (isNetworkFailure(error)) return [networkFailureMessage()];
-    return [error instanceof Error
-      ? `Could not establish the Supabase player session: ${error.message}`
-      : "Could not establish the Supabase player session."];
-  }
-  const operations = (await getOutbox()).filter((operation) => operation.state === "pending");
-  const errors: string[] = [];
+function taskPayload(task: Task, userId: string) {
+  return {
+    id: task.id,
+    user_id: userId,
+    path: task.path,
+    category: task.category,
+    title: task.title,
+    description: task.description,
+    xp_value: task.xpValue,
+    is_active: task.isActive,
+    scheduled_date: task.scheduledDate ?? null,
+    updated_at: task.updatedAt,
+  };
+}
 
+async function pushOperation(
+  client: ActiveClient,
+  userId: string,
+  operation: SyncOperation,
+): Promise<void> {
+  if (operation.kind === "task-upsert") {
+    if (!operation.task) throw new Error("Queued task update is missing its task data.");
+    const { error } = await client.from("tasks").upsert(taskPayload(operation.task, userId));
+    if (error) throw new Error(error.message);
+    return;
+  }
+
+  if (operation.kind === "completion") {
+    if (!operation.completion) throw new Error("Queued completion is missing its completion data.");
+    const { error } = await client.rpc("complete_task", {
+      p_task_id: operation.completion.taskId,
+      p_idempotency_key: operation.completion.idempotencyKey,
+      p_local_date: operation.completion.localDate,
+    });
+    if (error) throw new Error(error.message);
+    return;
+  }
+
+  if (!operation.timezone) throw new Error("Queued timezone update is missing its timezone.");
+  const { error } = await client
+    .from("users")
+    .update({ timezone: operation.timezone })
+    .eq("id", userId);
+  if (error) throw new Error(error.message);
+}
+
+async function pushPendingOperations(
+  client: ActiveClient,
+  userId: string,
+  operations: SyncOperation[],
+): Promise<string[]> {
+  const errors: string[] = [];
   for (const operation of operations) {
     try {
-      if (operation.kind === "task-upsert") {
-        if (!operation.task) throw new Error("Queued task update is missing its task data.");
-        const task = operation.task;
-        const { error } = await client.from("tasks").upsert({
-          id: task.id,
-          user_id: userId,
-          path: task.path,
-          category: task.category,
-          title: task.title,
-          description: task.description,
-          xp_value: task.xpValue,
-          is_active: task.isActive,
-          scheduled_date: task.scheduledDate ?? null,
-          updated_at: task.updatedAt,
-        });
-        if (error) throw new Error(error.message);
-      } else if (operation.kind === "completion") {
-        if (!operation.completion) throw new Error("Queued completion is missing its completion data.");
-        const { error } = await client.rpc("complete_task", {
-          p_task_id: operation.completion.taskId,
-          p_idempotency_key: operation.completion.idempotencyKey,
-          p_local_date: operation.completion.localDate,
-        });
-        if (error) throw new Error(error.message);
-      } else {
-        if (!operation.timezone) throw new Error("Queued timezone update is missing its timezone.");
-        const { error } = await client
-          .from("users")
-          .update({ timezone: operation.timezone })
-          .eq("id", userId);
-        if (error) throw new Error(error.message);
-      }
+      await pushOperation(client, userId, operation);
       await acknowledgeOperation(operation);
     } catch (error) {
       if (isNetworkFailure(error)) {
@@ -89,6 +92,54 @@ export async function syncOutbox(): Promise<string[]> {
     }
   }
   return errors;
+}
+
+export async function syncOutbox(): Promise<string[]> {
+  let client: ActiveClient | null;
+  try {
+    client = getSupabaseClient();
+  } catch (error) {
+    return [error instanceof Error ? error.message : "Could not initialize the Supabase client."];
+  }
+  if (!client) return [];
+
+  let userId: string;
+  try {
+    userId = await ensureAnonymousSession();
+  } catch (error) {
+    if (isNetworkFailure(error)) return [networkFailureMessage()];
+    return [error instanceof Error
+      ? `Could not establish the Supabase player session: ${error.message}`
+      : "Could not establish the Supabase player session."];
+  }
+
+  const operations = (await getOutbox()).filter((operation) => operation.state === "pending");
+  return pushPendingOperations(client, userId, operations);
+}
+
+async function seedRemoteTasks(
+  client: ActiveClient,
+  userId: string,
+  tasks: Task[],
+): Promise<void> {
+  for (const task of tasks) {
+    const { error } = await client.from("tasks").upsert({
+      ...taskPayload(task, userId),
+      created_at: task.createdAt,
+    });
+    if (error) throw new Error(`Could not create starter task: ${error.message}`);
+  }
+}
+
+async function mergePendingTasks(remoteTasks: Task[]): Promise<Task[]> {
+  const pendingOperations = await getOutbox();
+  const pendingTasks = pendingOperations.filter(
+    (operation): operation is SyncOperation & { task: Task } =>
+      operation.kind === "task-upsert" && Boolean(operation.task),
+  );
+  const merged = new Map(remoteTasks.map((task) => [task.id, task]));
+  for (const { task } of pendingTasks) merged.set(task.id, task);
+  return [...merged.values()];
 }
 
 export async function loadRemoteTasks(localTasks: Task[]): Promise<Task[] | null> {
@@ -106,36 +157,11 @@ export async function loadRemoteTasks(localTasks: Task[]): Promise<Task[] | null
     fromRemoteTask(row as Parameters<typeof fromRemoteTask>[0]),
   );
   if (remoteTasks.length === 0) {
-    for (const task of localTasks) {
-      const { error: insertError } = await client.from("tasks").upsert({
-        id: task.id,
-        user_id: userId,
-        path: task.path,
-        category: task.category,
-        title: task.title,
-        description: task.description,
-        xp_value: task.xpValue,
-        is_active: task.isActive,
-        scheduled_date: task.scheduledDate ?? null,
-        created_at: task.createdAt,
-        updated_at: task.updatedAt,
-      });
-      if (insertError) throw new Error(`Could not create starter task: ${insertError.message}`);
-    }
+    await seedRemoteTasks(client, userId, localTasks);
     return localTasks;
   }
 
-  const pendingOperations = await getOutbox();
-  const pendingTasks = new Map(
-    pendingOperations
-      .filter((operation): operation is SyncOperation & { task: Task } =>
-        operation.kind === "task-upsert" && Boolean(operation.task),
-      )
-      .map((operation) => [operation.task.id, operation.task]),
-  );
-  const merged = new Map(remoteTasks.map((task) => [task.id, task]));
-  for (const [id, task] of pendingTasks) merged.set(id, task);
-  return [...merged.values()];
+  return mergePendingTasks(remoteTasks);
 }
 
 export async function syncInitialTimezone(timezone: string): Promise<void> {
