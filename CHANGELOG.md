@@ -27,3 +27,4 @@
 - Split calendar month-grid and selected-day rendering from calendar state/navigation.
 - Extracted dungeon task-category and task-card rendering from path-level state/actions.
 - Separated Supabase account operations and the cross-browser account form from timezone settings.
+- Isolated local/remote profile initialization and task/timezone actions from the game context provider.

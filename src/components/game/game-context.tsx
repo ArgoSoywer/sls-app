@@ -17,24 +17,12 @@ import {
   displayDate,
   xpInPeriod,
   daysInMonth,
-  xpForCategory,
 } from "@/features/game-engine";
-import {
-  loadLocalSnapshot,
-  mergeRemoteCompletions,
-  recordLocalCompletion,
-  replaceLocalTasks,
-  saveLocalTask,
-  saveTimezone,
-} from "@/lib/offline/database";
-import {
-  loadRemoteCompletions,
-  loadRemoteTasks,
-  retryOutbox,
-  syncOutbox,
-  syncInitialTimezone,
-} from "@/lib/sync/service";
+import { loadLocalSnapshot } from "@/lib/offline/database";
+import { retryOutbox, syncOutbox } from "@/lib/sync/service";
 import type { Completion, PathKey, PeriodBar, Task, TaskCategory } from "@/types/game";
+import { useGameActions } from "@/components/game/use-game-actions";
+import { useGameInitialization } from "@/components/game/use-game-initialization";
 
 interface GameContextValue {
   tasks: Task[];
@@ -106,59 +94,28 @@ export function GameProvider({ children }: { children: ReactNode }) {
     }
   }, [refreshLocal, syncAvailable]);
 
-  useEffect(() => {
-    let active = true;
-    const init = async () => {
-      try {
-        const snapshot = await loadLocalSnapshot();
-        if (!active) return;
-        setTasks(snapshot.tasks);
-        setCompletions(snapshot.completions);
-        setTimezone(snapshot.timezone);
-        setIsReady(true);
+  useGameInitialization({
+    syncAvailable,
+    refreshLocal,
+    setTasks,
+    setCompletions,
+    setTimezone,
+    setIsReady,
+    setError,
+  });
 
-        if (syncAvailable && navigator.onLine) {
-          try {
-            const startupErrors = await syncOutbox();
-            await syncInitialTimezone(snapshot.timezone);
-            const remoteTasks = await loadRemoteTasks(snapshot.tasks);
-            if (active && remoteTasks) {
-              await replaceLocalTasks(remoteTasks);
-            }
-            const remoteCompletions = await loadRemoteCompletions();
-            if (active) await mergeRemoteCompletions(remoteCompletions);
-            const syncErrors = await syncOutbox();
-            const allSyncErrors = [...startupErrors, ...syncErrors];
-            if (active && allSyncErrors.length > 0) {
-              setError(`Sync needs attention: ${allSyncErrors.join(" · ")}`);
-            }
-            if (active) await refreshLocal();
-          } catch (cause) {
-            if (active) {
-              setError(cause instanceof Error ? cause.message : "Could not connect to Supabase.");
-            }
-          }
-        }
-      } catch (cause) {
-        if (active) {
-          setError(cause instanceof Error ? cause.message : "Could not open local storage.");
-          setIsReady(true);
-        }
-      }
-    };
-    void init();
+  useEffect(() => {
     const updateOnline = () => setIsOnline(navigator.onLine);
     updateOnline();
     window.addEventListener("online", updateOnline);
     window.addEventListener("offline", updateOnline);
     const clock = window.setInterval(() => setNow(new Date()), 30_000);
     return () => {
-      active = false;
       window.clearInterval(clock);
       window.removeEventListener("online", updateOnline);
       window.removeEventListener("offline", updateOnline);
     };
-  }, [refreshLocal, syncAvailable]);
+  }, []);
 
   useEffect(() => {
     if (isOnline && !previousOnline.current && syncAvailable && isReady) {
@@ -193,71 +150,17 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const weeklyBar = periodBar(weeklyXp, 7);
   const monthlyBar = periodBar(monthlyXp, dayCount);
 
-  const saveTask = useCallback(async (input: {
-    id?: string;
-    path: PathKey;
-    category: TaskCategory;
-    title: string;
-    description: string;
-    scheduledDate?: string | null;
-  }) => {
-    const timestamp = new Date().toISOString();
-    const previous = input.id ? tasks.find((task) => task.id === input.id) : undefined;
-    const task: Task = {
-      id: previous?.id ?? crypto.randomUUID(),
-      path: input.path,
-      category: previous?.category ?? input.category,
-      title: input.title.trim(),
-      description: input.description.trim(),
-      xpValue: previous?.xpValue ?? xpForCategory(input.category),
-      isActive: true,
-      createdAt: previous?.createdAt ?? timestamp,
-      updatedAt: timestamp,
-      scheduledDate: input.scheduledDate === undefined
-        ? previous?.scheduledDate ?? null
-        : input.scheduledDate,
-    };
-    if (!task.title) throw new Error("Task title cannot be empty.");
-    const syncErrors = await saveLocalTask(
-      task,
-      syncAvailable,
-      syncAvailable && isOnline ? syncOutbox : undefined,
-    );
-    setTasks((existing) => [task, ...existing.filter((item) => item.id !== task.id)]);
-    if (syncErrors.length > 0) setError(`Sync needs attention: ${syncErrors.join(" · ")}`);
-  }, [isOnline, syncAvailable, tasks]);
-
-  const completeTask = useCallback(async (taskId: string) => {
-    const task = tasks.find((item) => item.id === taskId && item.isActive);
-    if (!task) throw new Error("This task is no longer available.");
-    const completion = await recordLocalCompletion(task, today, syncAvailable);
-    setCompletions((existing) => [completion, ...existing]);
-    if (syncAvailable && isOnline) await synchronize();
-  }, [isOnline, synchronize, syncAvailable, tasks, today]);
-
-  const archiveTask = useCallback(async (taskId: string) => {
-    const task = tasks.find((item) => item.id === taskId);
-    if (!task) throw new Error("This task could not be found.");
-    const archived = { ...task, isActive: false, updatedAt: new Date().toISOString() };
-    const syncErrors = await saveLocalTask(
-      archived,
-      syncAvailable,
-      syncAvailable && isOnline ? syncOutbox : undefined,
-    );
-    setTasks((existing) => existing.map((item) => item.id === taskId ? archived : item));
-    if (syncErrors.length > 0) setError(`Sync needs attention: ${syncErrors.join(" · ")}`);
-  }, [isOnline, syncAvailable, tasks]);
-
-  const updateTimezone = useCallback(async (nextTimezone: string) => {
-    try {
-      new Intl.DateTimeFormat("en-US", { timeZone: nextTimezone });
-    } catch {
-      throw new Error(`"${nextTimezone}" is not a valid IANA timezone.`);
-    }
-    await saveTimezone(nextTimezone, syncAvailable);
-    setTimezone(nextTimezone);
-    if (syncAvailable && isOnline) await synchronize();
-  }, [isOnline, synchronize, syncAvailable]);
+  const { saveTask, completeTask, archiveTask, updateTimezone } = useGameActions({
+    tasks,
+    today,
+    syncAvailable,
+    isOnline,
+    synchronize,
+    setTasks,
+    setCompletions,
+    setTimezone,
+    setError,
+  });
 
   const value: GameContextValue = {
     tasks,
