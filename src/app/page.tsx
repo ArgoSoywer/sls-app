@@ -7,15 +7,8 @@ import { SystemHud } from "@/components/system/system-hud";
 import { SystemTerminal } from "@/components/system/system-terminal";
 import { SettingsPanel } from "@/components/system/settings-panel";
 import { useGame } from "@/components/game/game-context";
-import { PATHS, type PathKey } from "@/types/game";
-
-const pathNames: Record<PathKey, string> = {
-  profession: "Profession",
-  academics: "Academics",
-  survival: "Survival",
-  mentality: "Mentality",
-  family: "Family",
-};
+import { PATH_INFO } from "@/features/game-engine";
+import { PATHS } from "@/types/game";
 
 export default function DashboardPage() {
   const game = useGame();
@@ -58,7 +51,7 @@ export default function DashboardPage() {
         {PATHS.map((path, index) => (
           <Link href={`/paths/${path}`} className="path-link" key={path}>
             <span className="path-index">0{index + 1}</span>
-            <span>{pathNames[path]}</span>
+              <span>{PATH_INFO[path].title}</span>
             <span className="path-arrow" aria-hidden="true">↗</span>
           </Link>
         ))}

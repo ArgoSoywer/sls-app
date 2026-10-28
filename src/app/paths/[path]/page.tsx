@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { DungeonPage } from "@/components/dungeons/dungeon-page";
-import { PATHS, type PathKey } from "@/types/game";
+import { isPathKey } from "@/features/game-engine";
 
 export default async function PathPage({
   params,
@@ -8,6 +8,6 @@ export default async function PathPage({
   params: Promise<{ path: string }>;
 }) {
   const { path } = await params;
-  if (!PATHS.includes(path as PathKey)) notFound();
-  return <DungeonPage path={path as PathKey} />;
+  if (!isPathKey(path)) notFound();
+  return <DungeonPage path={path} />;
 }

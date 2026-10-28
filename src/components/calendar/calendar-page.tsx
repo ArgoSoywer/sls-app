@@ -4,27 +4,15 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
   addCalendarMonths,
+  CATEGORY_INFO,
   calendarMonthDays,
   displayDate,
+  PATH_INFO,
 } from "@/features/game-engine";
 import { useGame } from "@/components/game/game-context";
 import { TaskComposer } from "@/components/tasks/task-composer";
 import type { PathKey, Task, TaskCategory } from "@/types/game";
 import { PATHS } from "@/types/game";
-
-const PATH_LABELS: Record<PathKey, string> = {
-  profession: "Profession",
-  academics: "Academics",
-  survival: "Survival",
-  mentality: "Mentality",
-  family: "Family",
-};
-
-const CATEGORY_LABELS: Record<TaskCategory, string> = {
-  everyday: "Everyday",
-  challenge: "Challenge",
-  planned: "Planned",
-};
 
 const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
@@ -179,7 +167,7 @@ export function CalendarPage() {
                 <div>
                   <h3>{task.title}</h3>
                   {task.description && <p>{task.description}</p>}
-                  <span>{PATH_LABELS[task.path]} · {CATEGORY_LABELS[task.category]} · {task.xpValue} XP</span>
+                  <span>{PATH_INFO[task.path].title} · {CATEGORY_INFO[task.category].singularLabel} · {task.xpValue} XP</span>
                 </div>
                 <button
                   className="calendar-edit-button"
@@ -208,7 +196,7 @@ export function CalendarPage() {
               value={selectedPath}
               onChange={(event) => setSelectedPath(event.target.value as PathKey)}
             >
-              {PATHS.map((path) => <option key={path} value={path}>{PATH_LABELS[path]}</option>)}
+              {PATHS.map((path) => <option key={path} value={path}>{PATH_INFO[path].title}</option>)}
             </select>
             <label htmlFor="calendar-category">CATEGORY</label>
             <select
@@ -217,7 +205,7 @@ export function CalendarPage() {
               onChange={(event) => setSelectedCategory(event.target.value as TaskCategory)}
             >
               {(["everyday", "challenge", "planned"] as const).map((category) => (
-                <option key={category} value={category}>{CATEGORY_LABELS[category]}</option>
+                <option key={category} value={category}>{CATEGORY_INFO[category].singularLabel}</option>
               ))}
             </select>
             <button className="calendar-new-task-button" onClick={() => setComposerOpen(true)}>

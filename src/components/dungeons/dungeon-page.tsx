@@ -7,50 +7,18 @@ import { useGame } from "@/components/game/game-context";
 import { SystemHud } from "@/components/system/system-hud";
 import { SettingsPanel } from "@/components/system/settings-panel";
 import { TaskComposer } from "@/components/tasks/task-composer";
+import { CATEGORY_INFO, PATH_INFO, TASK_CATEGORY_ORDER, xpForCategory } from "@/features/game-engine";
 import type { PathKey, Task, TaskCategory } from "@/types/game";
 
-const pathInfo: Record<PathKey, { title: string; epithet: string; description: string; rune: string }> = {
-  profession: {
-    title: "Profession",
-    epithet: "THE FORGE OF MASTERY",
-    description: "Build your craft through deliberate work. Every focused action becomes part of your edge.",
-    rune: "ᚠ",
-  },
-  academics: {
-    title: "Academics",
-    epithet: "THE ARCANE ARCHIVE",
-    description: "Enter the quiet stacks. Gather knowledge, question what you find, and make it yours.",
-    rune: "ᚨ",
-  },
-  survival: {
-    title: "Survival",
-    epithet: "THE UNTAMED FRONTIER",
-    description: "Return to the elements. Strength, health, and resilience are earned one expedition at a time.",
-    rune: "ᛉ",
-  },
-  mentality: {
-    title: "Mentality",
-    epithet: "THE INNER SANCTUM",
-    description: "Train the unseen. Attention, patience, and self-command are powers of their own.",
-    rune: "ᛞ",
-  },
-  family: {
-    title: "Family",
-    epithet: "THE ANCHORING FLAME",
-    description: "Protect what matters. Presence and care are quests worthy of your strongest effort.",
-    rune: "ᛟ",
-  },
-};
-
-const categories: Array<{ value: TaskCategory; label: string; subtitle: string }> = [
-  { value: "everyday", label: "Everyday", subtitle: "RENEWED EACH DAY · 10 XP" },
-  { value: "challenge", label: "Challenges", subtitle: "ONE-TIME TRIALS · 30 XP" },
-  { value: "planned", label: "Planned", subtitle: "YOUR NEXT MILESTONE · 50 XP" },
-];
+const categories = TASK_CATEGORY_ORDER.map((value) => ({
+  value,
+  ...CATEGORY_INFO[value],
+  xp: xpForCategory(value),
+}));
 
 export function DungeonPage({ path }: { path: PathKey }) {
   const game = useGame();
-  const info = pathInfo[path];
+  const info = PATH_INFO[path];
   const [composer, setComposer] = useState<{ open: boolean; category?: TaskCategory; task?: Task }>({ open: false });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [actionError, setActionError] = useState("");
@@ -122,7 +90,7 @@ export function DungeonPage({ path }: { path: PathKey }) {
                 <div>
                   <span className="category-index">0{index + 1} / OBJECTIVES</span>
                   <h2 id={`category-${category.value}`}>{category.label}</h2>
-                  <p>{category.subtitle}</p>
+                  <p>{category.subtitle} · {category.xp} XP</p>
                 </div>
                 <button
                   className="add-task-button"

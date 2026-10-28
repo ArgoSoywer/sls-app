@@ -18,3 +18,7 @@
 ### Fixed
 - Improved “Failed to fetch” handling: keep changes queued, stop further network operations for the failed sync pass, and display an actionable connection/configuration message.
 - Prevented locally edited scheduled tasks from being lost when task data is synchronized.
+
+### Refactored
+- Centralized path and task-category metadata, reused the game engine's task XP and month-length helpers, and narrowed path routes with a type guard.
+- Removed the unused `@testing-library/user-event` development dependency.

@@ -1,6 +1,8 @@
 import type { PeriodBar, StatusName, TaskCategory } from "@/types/game";
 import type { Completion } from "@/types/game";
 
+export { CATEGORY_INFO, isPathKey, PATH_INFO, TASK_CATEGORY_ORDER } from "./metadata";
+
 export const MAX_LEVEL = 10_000;
 export const XP_BY_CATEGORY: Record<TaskCategory, number> = {
   everyday: 10,

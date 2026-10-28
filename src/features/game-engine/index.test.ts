@@ -13,6 +13,10 @@ import {
   displayDate,
   MAX_LEVEL,
   statusForXp,
+  isPathKey,
+  PATH_INFO,
+  CATEGORY_INFO,
+  TASK_CATEGORY_ORDER,
 } from "./index";
 
 describe("level curve", () => {
@@ -47,6 +51,16 @@ describe("level curve", () => {
     expect(() => levelThreshold(1.5)).toThrow(RangeError);
     expect(() => levelForXp(-1)).toThrow(RangeError);
     expect(() => levelForXp(Number.NaN)).toThrow(RangeError);
+  });
+});
+
+describe("shared game metadata", () => {
+  it("validates paths and exposes consistent path and task-category labels", () => {
+    expect(isPathKey("academics")).toBe(true);
+    expect(isPathKey("unknown")).toBe(false);
+    expect(PATH_INFO.academics.title).toBe("Academics");
+    expect(CATEGORY_INFO.challenge.singularLabel).toBe("Challenge");
+    expect(TASK_CATEGORY_ORDER).toEqual(["everyday", "challenge", "planned"]);
   });
 });
 

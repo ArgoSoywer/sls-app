@@ -17,6 +17,7 @@ import {
   displayDate,
   xpInPeriod,
   daysInMonth,
+  xpForCategory,
 } from "@/features/game-engine";
 import {
   loadLocalSnapshot,
@@ -208,9 +209,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       category: previous?.category ?? input.category,
       title: input.title.trim(),
       description: input.description.trim(),
-      xpValue: previous?.xpValue ?? (
-        input.category === "everyday" ? 10 : input.category === "challenge" ? 30 : 50
-      ),
+      xpValue: previous?.xpValue ?? xpForCategory(input.category),
       isActive: true,
       createdAt: previous?.createdAt ?? timestamp,
       updatedAt: timestamp,

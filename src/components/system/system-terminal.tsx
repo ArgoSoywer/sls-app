@@ -4,15 +4,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useReducedMotion } from "framer-motion";
 import { useGame } from "@/components/game/game-context";
-import { PATHS, type PathKey } from "@/types/game";
-
-const pathNames: Record<PathKey, string> = {
-  profession: "Profession",
-  academics: "Academics",
-  survival: "Survival",
-  mentality: "Mentality",
-  family: "Family",
-};
+import { PATH_INFO } from "@/features/game-engine";
+import { PATHS } from "@/types/game";
 
 export function SystemTerminal() {
   const { monthlyBar, level } = useGame();
@@ -50,7 +43,7 @@ export function SystemTerminal() {
         {PATHS.map((path, index) => (
           <Link key={path} href={`/paths/${path}`} className="terminal-path">
             <span>0{index + 1}</span>
-            {pathNames[path]}
+            {PATH_INFO[path].title}
             <span className="terminal-path-chevron">›</span>
           </Link>
         ))}

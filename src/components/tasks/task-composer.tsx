@@ -3,13 +3,14 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useGame } from "@/components/game/game-context";
+import { CATEGORY_INFO, TASK_CATEGORY_ORDER, xpForCategory } from "@/features/game-engine";
 import type { PathKey, Task, TaskCategory } from "@/types/game";
 
-const categories: Array<{ value: TaskCategory; label: string; xp: number }> = [
-  { value: "everyday", label: "Everyday", xp: 10 },
-  { value: "challenge", label: "Challenges", xp: 30 },
-  { value: "planned", label: "Planned", xp: 50 },
-];
+const categories = TASK_CATEGORY_ORDER.map((value) => ({
+  value,
+  label: CATEGORY_INFO[value].label,
+  xp: xpForCategory(value),
+}));
 
 export function TaskComposer({
   path,

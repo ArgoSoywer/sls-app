@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useGame, displayDate } from "@/components/game/game-context";
+import { daysInMonth } from "@/features/game-engine";
 import type { PeriodBar } from "@/types/game";
 
 const CharacterScene = dynamic(
@@ -65,7 +66,7 @@ export function SystemHud({ onSettings }: { onSettings: () => void }) {
           label="Monthly"
           icon="✧"
           bar={game.monthlyBar}
-          scale={new Date(Date.UTC(Number(game.today.slice(0, 4)), Number(game.today.slice(5, 7)), 0)).getUTCDate()}
+          scale={daysInMonth(game.today)}
         />
       </div>
 
