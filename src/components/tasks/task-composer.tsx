@@ -3,14 +3,8 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useGame } from "@/components/game/game-context";
-import { CATEGORY_INFO, TASK_CATEGORY_ORDER, xpForCategory } from "@/features/game-engine";
+import { TaskComposerForm } from "@/components/tasks/task-composer-form";
 import type { PathKey, Task, TaskCategory } from "@/types/game";
-
-const categories = TASK_CATEGORY_ORDER.map((value) => ({
-  value,
-  label: CATEGORY_INFO[value].label,
-  xp: xpForCategory(value),
-}));
 
 export function TaskComposer({
   path,
@@ -99,50 +93,20 @@ export function TaskComposer({
           <button className="modal-close" onClick={onClose} aria-label="Close task form" disabled={saving}>×</button>
           <span className="eyebrow">{task ? "AMEND YOUR DIRECTIVE" : "ISSUE A NEW DIRECTIVE"}</span>
           <h2 id="task-composer-title">{task ? "Edit task" : "Add task"}</h2>
-          <form onSubmit={(event) => void submit(event)}>
-            <label htmlFor="task-title">Task name</label>
-            <input
-              id="task-title"
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              placeholder="Name the objective"
-              maxLength={100}
-              required
-              autoFocus
-            />
-            <label htmlFor="task-description">Details <span>OPTIONAL</span></label>
-            <textarea
-              id="task-description"
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-              placeholder="Add a detail or reminder"
-              rows={3}
-              maxLength={400}
-            />
-            <label htmlFor="task-category">Category</label>
-            <select
-              id="task-category"
-              value={selectedCategory}
-              disabled={Boolean(task)}
-              onChange={(event) => setSelectedCategory(event.target.value as TaskCategory)}
-            >
-              {categories.map((item) => (
-                <option key={item.value} value={item.value}>{item.label} · {item.xp} XP</option>
-              ))}
-            </select>
-            <label htmlFor="task-scheduled-date">Scheduled date <span>OPTIONAL</span></label>
-            <input
-              id="task-scheduled-date"
-              type="date"
-              value={date}
-              onChange={(event) => setDate(event.target.value)}
-            />
-            {task && <p className="form-help">Task category and reward stay fixed after creation.</p>}
-            {error && <p className="form-error" role="alert">{error}</p>}
-            <button className="primary-button" type="submit" disabled={saving}>
-              {saving ? "SAVING…" : task ? "SAVE CHANGES" : "ADD TO PATH"}
-            </button>
-          </form>
+          <TaskComposerForm
+            task={task}
+            title={title}
+            description={description}
+            date={date}
+            category={selectedCategory}
+            error={error}
+            saving={saving}
+            onTitleChange={setTitle}
+            onDescriptionChange={setDescription}
+            onDateChange={setDate}
+            onCategoryChange={setSelectedCategory}
+            onSubmit={(event) => void submit(event)}
+          />
         </motion.section>
       </motion.div>
     </AnimatePresence>
